@@ -40,10 +40,10 @@ public class LLVector<T> {
         }
     }
     
-    private init(_ pointer: Pointer, _ length: Int) {
+    private init(_ pointer: Pointer, _ length: Int, _ capacity: Int) {
         self.pointer = pointer
         self.length = length
-        capacity = length
+        self.capacity = capacity
     }
     
     deinit {
@@ -51,9 +51,8 @@ public class LLVector<T> {
     }
     
     public func copy() -> LLVector<T> {
-        let addr = __allocate(stride * length)
-        memcpy(addr, pointer, stride * length)
-        let newVector = LLVector(addr, length)
+        let addr = __ptrcpy(pointer)
+        let newVector = LLVector(addr, length, capacity)
         return newVector
     }
     
@@ -71,6 +70,8 @@ public class LLVector<T> {
     }
 }
 
+// MARK: - Memory management
+
 extension LLVector {
     private func __allocate(_ size: Int) -> Pointer {
         var memory: UnsafeMutableRawPointer? = nil
@@ -87,15 +88,23 @@ extension LLVector {
     private func __destory(_ addr: Pointer) {
         free(addr)
     }
+    
+    private func __ptrcpy(_ ptr: Pointer) -> Pointer {
+        let addr = __allocate(stride * capacity)
+        memcpy(addr, ptr, stride * capacity)
+        return addr
+    }
 }
 
+// MARK: - Implement Sequence protocol
+
 extension LLVector: Sequence {
-    public struct Iterator<T>: IteratorProtocol {
+    public struct Iterator: IteratorProtocol {
         var current = 0
-        var pointer: UnsafeRawPointer
+        var pointer: Pointer
         var length: Int
         
-        init(_ pointer: UnsafeRawPointer, _ length: Int) {
+        init(_ pointer: Pointer, _ length: Int) {
             self.pointer = pointer
             self.length = length
         }
@@ -115,7 +124,28 @@ extension LLVector: Sequence {
         }
     }
     
-    public __consuming func makeIterator() -> Iterator<T> {
+    public __consuming func makeIterator() -> Iterator {
         return Iterator(pointer, length)
     }
+}
+
+// MARK: - Sorting method
+
+extension LLVector {
+    public func sorted(comp: (T, T) -> Bool) -> LLVector<T> {
+        let vector = copy()
+        vector.sort(comp: comp)
+        return vector
+    }
+    
+    public func sort(comp: (T, T) -> Bool) {
+        let p = pointer.assumingMemoryBound(to: T.self)
+        var array = UnsafeMutableBufferPointer(start: p, count: length)
+        array.sort(by: comp)
+    }
+}
+
+extension LLVector where T: Comparable {
+    public func sort() { sort() { $0 < $1 } }
+    public func sorted() -> LLVector { return sorted() { $0 < $1 } }
 }
