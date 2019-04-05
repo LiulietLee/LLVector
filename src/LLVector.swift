@@ -8,8 +8,7 @@
 
 import Foundation
 
-class LLVector<T> {
-    
+public class LLVector<T> {
     typealias Pointer = UnsafeMutableRawPointer
     
     private var pointer: Pointer!
@@ -20,19 +19,19 @@ class LLVector<T> {
         return MemoryLayout<T>.stride
     }
 
-    init() {
+    public init() {
         pointer = __allocate(stride)
         capacity = 1
         length = 1
     }
     
-    init(_ length: Int) {
+    public init(_ length: Int) {
         pointer = __allocate(stride * length)
         self.length = length
         capacity = length
     }
     
-    init(_ length: Int, _ value: T) {
+    public init(_ length: Int, _ value: T) {
         pointer = __allocate(stride * length)
         self.length = length
         capacity = length
@@ -51,22 +50,24 @@ class LLVector<T> {
         __destory(pointer)
     }
     
-    func copy() -> LLVector<T> {
+    public func copy() -> LLVector<T> {
         let addr = __allocate(stride * length)
         memcpy(addr, pointer, stride * length)
         let newVector = LLVector(addr, length)
         return newVector
     }
     
-    subscript(index: Int) -> T {
+    public subscript(index: Int) -> T {
         get { return get(index) }
-        set(newValue) {
-            pointer.storeBytes(of: newValue, toByteOffset: stride * index, as: T.self)
-        }
+        set(newValue) { set(index, newValue) }
     }
     
-    func get(_ index: Int) -> T {
+    public func get(_ index: Int) -> T {
         return pointer.load(fromByteOffset: stride * index, as: T.self)
+    }
+    
+    public func set(_ index: Int, _ value: T) {
+        pointer.storeBytes(of: value, toByteOffset: stride * index, as: T.self)
     }
 }
 
@@ -85,5 +86,36 @@ extension LLVector {
     
     private func __destory(_ addr: Pointer) {
         free(addr)
+    }
+}
+
+extension LLVector: Sequence {
+    public struct Iterator<T>: IteratorProtocol {
+        var current = 0
+        var pointer: UnsafeRawPointer
+        var length: Int
+        
+        init(_ pointer: UnsafeRawPointer, _ length: Int) {
+            self.pointer = pointer
+            self.length = length
+        }
+        
+        mutating public func next() -> T? {
+            if current < length {
+                defer {
+                    current += 1
+                }
+                return pointer.load(fromByteOffset:
+                    MemoryLayout<T>.stride * current,
+                    as: T.self
+                )
+            } else {
+                return nil
+            }
+        }
+    }
+    
+    public __consuming func makeIterator() -> Iterator<T> {
+        return Iterator(pointer, length)
     }
 }
