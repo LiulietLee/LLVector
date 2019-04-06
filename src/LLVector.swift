@@ -12,12 +12,15 @@ public class LLVector<T> {
     typealias Pointer = UnsafeMutableRawPointer
     
     private var pointer: Pointer!
-    private(set) var length: Int!
+    private var length: Int!
     private(set) var capacity: Int!
     
-    private var stride: Int {
-        return MemoryLayout<T>.stride
-    }
+    private var stride: Int { return MemoryLayout<T>.stride }
+    
+    public var isEmpty: Bool { return length == 0 }
+    public var count: Int { return length }
+    public var data: UnsafeMutableRawPointer { return pointer }
+    public var byteCount: Int { return stride * length }
 
     public init() {
         pointer = __allocate(stride)
@@ -27,13 +30,12 @@ public class LLVector<T> {
     
     public init(capacity: Int) {
         pointer = __allocate(stride * capacity)
-        // TODO: - change this line to `length = 0` after finishing append method
-        length = capacity
+        length = 0
         self.capacity = capacity
     }
     
     public init(repeaing value: T, count length: Int) {
-        pointer = __allocate(stride * length)
+        pointer = __allocate(byteCount)
         __fill_memory(pointer, length, value)
         self.length = length
         capacity = length
@@ -54,10 +56,20 @@ public class LLVector<T> {
         let newVector = LLVector(addr, length, capacity)
         return newVector
     }
-    
+}
+
+// MARK: - Element operation
+
+extension LLVector {
     public subscript(index: Int) -> T {
-        get { return get(index) }
-        set(newValue) { set(index, newValue) }
+        get {
+            assert(0 <= index && index < length, "out of range")
+            return get(index)
+        }
+        set(newValue) {
+            assert(0 <= index && index < length, "out of range")
+            set(index, newValue)
+        }
     }
     
     public func get(_ index: Int) -> T {
@@ -67,43 +79,236 @@ public class LLVector<T> {
     public func set(_ index: Int, _ value: T) {
         pointer.storeBytes(of: value, toByteOffset: stride * index, as: T.self)
     }
+
+    // MARK: - append functions
+    
+    public func append(_ value: T) {
+        if length >= capacity {
+            capacity <<= 1
+            let newAddr = __allocate(stride * capacity)
+            memcpy(newAddr, pointer, byteCount)
+            __destory(pointer)
+            pointer = newAddr
+        }
+        set(length, value)
+        length += 1
+    }
+    
+    public func append(contentsOf array: [T]) {
+        if length + array.count > capacity {
+            repeat {
+                capacity <<= 1
+            } while length + array.count > capacity
+            
+            let newAddr = __allocate(stride * capacity)
+            memcpy(newAddr, pointer, byteCount)
+            __destory(pointer)
+            pointer = newAddr
+        }
+        
+        var currentArray = array
+        memcpy(pointer.advanced(by: stride * length), &currentArray, stride * array.count)
+        length += array.count
+    }
+    
+    public func append(contentsOf vector: LLVector<T>) {
+        if length + vector.count > capacity {
+            repeat {
+                capacity <<= 1
+            } while length + vector.count > capacity
+            
+            let newAddr = __allocate(stride * capacity)
+            memcpy(newAddr, pointer, byteCount)
+            __destory(pointer)
+            pointer = newAddr
+        }
+        
+        memcpy(pointer.advanced(by: stride * length), vector.data, stride * vector.count)
+        length += vector.count
+    }
+    
+    // MARK: - insert functions
+    
+    public func insert(_ value: T, at index: Int) {
+        assert(0 <= index && index <= length, "out of range")
+        if index == length {
+            append(value)
+            return
+        }
+        
+        let src = pointer.advanced(by: stride * index)
+        if length >= capacity {
+            capacity <<= 1
+            let newAddr = __allocate(stride * capacity)
+            memcpy(newAddr, pointer, stride * index)
+            
+            let dst = newAddr.advanced(by: stride * (index + 1))
+            memcpy(dst, src, stride * (length - index))
+            __destory(pointer)
+            pointer = newAddr
+        } else {
+            let dst = pointer.advanced(by: stride * (index + 1))
+            memcpy(dst, src, stride * (length - index))
+        }
+        set(index, value)
+        length += 1
+    }
+    
+    public func insert(contentsOf array: [T], at index: Int) {
+        assert(0 <= index && index <= length, "out of range")
+        if index == length {
+            append(contentsOf: array)
+        }
+        
+        let src = pointer.advanced(by: stride * index)
+        if length + array.count > capacity {
+            repeat {
+                capacity <<= 1
+            } while length + array.count > capacity
+
+            let newAddr = __allocate(stride * capacity)
+            memcpy(newAddr, pointer, stride * index)
+            
+            let dst = newAddr.advanced(by: stride * (index + array.count))
+            memcpy(dst, src, stride * (length - index))
+            __destory(pointer)
+            pointer = newAddr
+        } else {
+            let dst = pointer.advanced(by: stride * (index + array.count))
+            memcpy(dst, src, stride * (length - index))
+        }
+        
+        var currentArray = array
+        memcpy(pointer.advanced(by: stride * index), &currentArray, stride * array.count)
+        length += array.count
+    }
+    
+    public func insert(contentsOf vector: LLVector, at index: Int) {
+        assert(0 <= index && index <= length, "out of range")
+        if index == length {
+            append(contentsOf: vector)
+        }
+
+        let src = pointer.advanced(by: stride * index)
+        if length + vector.count > capacity {
+            repeat {
+                capacity <<= 1
+            } while length + vector.count > capacity
+            
+            let newAddr = __allocate(stride * capacity)
+            memcpy(newAddr, pointer, stride * index)
+            
+            let dst = newAddr.advanced(by: stride * (index + vector.count))
+            memcpy(dst, src, stride * (length - index))
+            __destory(pointer)
+            pointer = newAddr
+        } else {
+            let dst = pointer.advanced(by: stride * (index + vector.count))
+            memcpy(dst, src, stride * (length - index))
+        }
+        
+        memcpy(pointer.advanced(by: stride * index), vector.data, stride * vector.count)
+        length += vector.count
+    }
+    
+    // MARK: - remove functions
+    
+    public func remove(at index: Int) {
+        assert(0 <= index && index < length, "out of range")
+        if index < length - 1 {
+            let dst = pointer.advanced(by: stride * index)
+            let src = pointer.advanced(by: stride * (index + 1))
+            memcpy(dst, src, stride * (length - index - 1))
+        }
+        length -= 1
+    }
+    
+    public func removeFirst() -> T? {
+        if length == 0 { return nil }
+        let first = get(0)
+        memcpy(pointer, pointer.advanced(by: stride), stride * (length - 1))
+        length -= 1
+        return first
+    }
+    
+    public func removeLast() -> T? {
+        if length == 0 { return nil }
+        let last = get(length - 1)
+        length -= 1
+        return last
+    }
+    
+    public func removeSubrange(_ range: Range<Int>) {
+        assert(
+            0 <= range.startIndex && range.startIndex < length
+                && 0 < range.endIndex && range.endIndex <= length,
+            "out of range"
+        )
+        let dst = pointer.advanced(by: stride * range.startIndex)
+        let src = pointer.advanced(by: stride * range.endIndex)
+        memcpy(dst, src, stride * (length - range.endIndex + 1))
+        length -= range.endIndex - range.startIndex
+    }
+}
+
+// MARK: - Sorting methods
+
+extension LLVector {
+    public func sorted(comp: (T, T) -> Bool) -> LLVector<T> {
+        let vector = copy()
+        vector.sort(comp: comp)
+        return vector
+    }
+    
+    public func sort(comp: (T, T) -> Bool) {
+        let p = pointer.assumingMemoryBound(to: T.self)
+        var array = UnsafeMutableBufferPointer(start: p, count: length)
+        array.sort(by: comp)
+    }
+}
+
+extension LLVector where T: Comparable {
+    public func sort() { sort() { $0 < $1 } }
+    public func sorted() -> LLVector { return sorted() { $0 < $1 } }
 }
 
 // MARK: - Memory management
 
 extension LLVector {
     private func __allocate(_ size: Int) -> Pointer {
-        var memory: Pointer? = nil
+        var addr: Pointer? = nil
         let alignment = Int(getpagesize())
         let allocationSize = (size + alignment - 1) & (~(alignment - 1))
-        posix_memalign(&memory, alignment, allocationSize)
-        if let addr = memory {
-            return addr
+        posix_memalign(&addr, alignment, allocationSize)
+        if let ptr = addr {
+            return ptr
         } else {
             fatalError("out of memory")
         }
     }
     
-    private func __destory(_ addr: Pointer) {
-        free(addr)
+    private func __fill_memory(_ ptr: Pointer, _ len: Int, _ val: T) {
+        var idx = 1
+        ptr.storeBytes(of: val, as: T.self)
+        while (idx << 1) <= len {
+            let dst = ptr.advanced(by: stride * idx)
+            memcpy(dst, ptr, stride * idx)
+            idx <<= 1
+        }
+        if idx < len {
+            let dst = ptr.advanced(by: stride * idx)
+            memcpy(dst, ptr, stride * (len - idx))
+        }
+    }
+    
+    private func __destory(_ ptr: Pointer) {
+        free(ptr)
     }
     
     private func __ptrcpy(_ ptr: Pointer, _ size: Int) -> Pointer {
         let addr = __allocate(size)
         memcpy(addr, ptr, size)
         return addr
-    }
-    
-    private func __fill_memory(_ ptr: Pointer, _ len: Int, _ val: T) {
-        var cur = 1
-        ptr.storeBytes(of: val, as: T.self)
-        while cur * 2 <= len {
-            let dst = ptr.advanced(by: stride * cur)
-            memcpy(dst, ptr, stride * cur)
-            cur *= 2
-        }
-        let dst = ptr.advanced(by: stride * cur)
-        memcpy(dst, ptr, stride * (len - cur))
     }
 }
 
@@ -138,25 +343,4 @@ extension LLVector: Sequence {
     public __consuming func makeIterator() -> Iterator {
         return Iterator(pointer, length)
     }
-}
-
-// MARK: - Sorting methods
-
-extension LLVector {
-    public func sorted(comp: (T, T) -> Bool) -> LLVector<T> {
-        let vector = copy()
-        vector.sort(comp: comp)
-        return vector
-    }
-    
-    public func sort(comp: (T, T) -> Bool) {
-        let p = pointer.assumingMemoryBound(to: T.self)
-        var array = UnsafeMutableBufferPointer(start: p, count: length)
-        array.sort(by: comp)
-    }
-}
-
-extension LLVector where T: Comparable {
-    public func sort() { sort() { $0 < $1 } }
-    public func sorted() -> LLVector { return sorted() { $0 < $1 } }
 }
