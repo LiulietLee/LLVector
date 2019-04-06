@@ -22,22 +22,21 @@ public class LLVector<T> {
     public init() {
         pointer = __allocate(stride)
         capacity = 1
-        length = 1
+        length = 0
     }
     
-    public init(_ length: Int) {
-        pointer = __allocate(stride * length)
-        self.length = length
-        capacity = length
+    public init(capacity: Int) {
+        pointer = __allocate(stride * capacity)
+        // TODO: - change this line to `length = 0` after finishing append method
+        length = capacity
+        self.capacity = capacity
     }
     
-    public init(_ length: Int, _ value: T) {
+    public init(repeaing value: T, count length: Int) {
         pointer = __allocate(stride * length)
+        __fill_memory(pointer, length, value)
         self.length = length
         capacity = length
-        for i in 0..<length {
-            pointer.storeBytes(of: value, toByteOffset: stride * i, as: T.self)
-        }
     }
     
     private init(_ pointer: Pointer, _ length: Int, _ capacity: Int) {
@@ -51,7 +50,7 @@ public class LLVector<T> {
     }
     
     public func copy() -> LLVector<T> {
-        let addr = __ptrcpy(pointer)
+        let addr = __ptrcpy(pointer, stride * capacity)
         let newVector = LLVector(addr, length, capacity)
         return newVector
     }
@@ -74,7 +73,7 @@ public class LLVector<T> {
 
 extension LLVector {
     private func __allocate(_ size: Int) -> Pointer {
-        var memory: UnsafeMutableRawPointer? = nil
+        var memory: Pointer? = nil
         let alignment = Int(getpagesize())
         let allocationSize = (size + alignment - 1) & (~(alignment - 1))
         posix_memalign(&memory, alignment, allocationSize)
@@ -89,10 +88,22 @@ extension LLVector {
         free(addr)
     }
     
-    private func __ptrcpy(_ ptr: Pointer) -> Pointer {
-        let addr = __allocate(stride * capacity)
-        memcpy(addr, ptr, stride * capacity)
+    private func __ptrcpy(_ ptr: Pointer, _ size: Int) -> Pointer {
+        let addr = __allocate(size)
+        memcpy(addr, ptr, size)
         return addr
+    }
+    
+    private func __fill_memory(_ ptr: Pointer, _ len: Int, _ val: T) {
+        var cur = 1
+        ptr.storeBytes(of: val, as: T.self)
+        while cur * 2 <= len {
+            let dst = ptr.advanced(by: stride * cur)
+            memcpy(dst, ptr, stride * cur)
+            cur *= 2
+        }
+        let dst = ptr.advanced(by: stride * cur)
+        memcpy(dst, ptr, stride * (len - cur))
     }
 }
 
@@ -114,8 +125,8 @@ extension LLVector: Sequence {
                 defer {
                     current += 1
                 }
-                return pointer.load(fromByteOffset:
-                    MemoryLayout<T>.stride * current,
+                return pointer.load(
+                    fromByteOffset: MemoryLayout<T>.stride * current,
                     as: T.self
                 )
             } else {
@@ -129,7 +140,7 @@ extension LLVector: Sequence {
     }
 }
 
-// MARK: - Sorting method
+// MARK: - Sorting methods
 
 extension LLVector {
     public func sorted(comp: (T, T) -> Bool) -> LLVector<T> {
