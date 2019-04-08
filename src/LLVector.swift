@@ -17,8 +17,6 @@ public class LLVector<T> {
     
     private var stride: Int { return MemoryLayout<T>.stride }
     
-    public var isEmpty: Bool { return length == 0 }
-    public var count: Int { return length }
     public var data: UnsafeMutableRawPointer { return pointer }
     public var byteCount: Int { return stride * length }
 
@@ -344,3 +342,12 @@ extension LLVector: Sequence {
         return Iterator(pointer, length)
     }
 }
+
+// MARK: - Implement RandomAccessCollection and MutableCollection
+
+extension LLVector: RandomAccessCollection {
+    public var startIndex: Int { return 0 }
+    public var endIndex: Int { return length }
+}
+
+extension LLVector: MutableCollection {}

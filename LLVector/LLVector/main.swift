@@ -31,9 +31,15 @@ v.insert(
 v.sort() { $0.x < $1.x }
 v.removeSubrange(1..<4)
 
+if let i = v.firstIndex(of: float4(repeating: 9.0)) {
+    v[i] = float4(repeating: 3.0)
+}
+
 for coor in v {
     print(coor.x)
 }
+
+print(v.isEmpty)
 
 //let nv = LLVector<float4>()
 //
