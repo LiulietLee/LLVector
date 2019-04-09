@@ -9,37 +9,93 @@
 import Foundation
 import simd
 
-let v = LLVector<float4>()
+let v = LLVector<Int>()
+var a = Array<Int>()
 
-for i in 0..<10 {
-    v.append(float4(repeating: Float(i)))
+func cal_vector() {
+    let start = DispatchTime.now()
+    
+    for i in 0..<100000000 {
+        v.append(i)
+    }
+    
+    let end = DispatchTime.now()
+    
+    let nanoTime = end.uptimeNanoseconds - start.uptimeNanoseconds
+    let timeInterval = Double(nanoTime) / 1_000_000_000
+    
+    var sum = 0
+    //for val in v {
+    //    sum += val
+    //}
+    
+    for i in 0..<v.count {
+        sum += v[i]
+    }
+    
+    print(timeInterval)
+    
+    print(sum)
 }
 
-v.insert(float4(repeating: 1000.0), at: 5)
-v.remove(at: 5)
-
-v.insert(
-    contentsOf: [
-        float4(repeating: 10.0),
-        float4(repeating: 100.0),
-        float4(repeating: 1000.0),
-        float4(repeating: 10000.0)
-    ],
-    at: 3
-)
-
-v.sort() { $0.x < $1.x }
-v.removeSubrange(1..<4)
-
-if let i = v.firstIndex(of: float4(repeating: 9.0)) {
-    v[i] = float4(repeating: 3.0)
+func cal_array() {
+    let start = DispatchTime.now()
+    
+    for i in 0..<10000 {
+        a.append(i)
+    }
+    
+    let end = DispatchTime.now()
+    
+    let nanoTime = end.uptimeNanoseconds - start.uptimeNanoseconds
+    let timeInterval = Double(nanoTime) / 1_000_000_000
+    
+    var sum = 0
+    //for val in a {
+    //    sum += val
+    //}
+    
+    for i in 0..<a.count {
+        sum += a[i]
+    }
+    
+    
+    print(timeInterval)
+    
+    print(sum)
 }
 
-for coor in v {
-    print(coor.x)
-}
+cal_vector()
 
-print(v.isEmpty)
+//for i in 0..<10 {
+//    v.append(float4(repeating: Float(i)))
+//}
+//
+//v.insert(float4(repeating: 1000.0), at: 5)
+//v.remove(at: 5)
+//
+//v.insert(
+//    contentsOf: [
+//        float4(repeating: 10.0),
+//        float4(repeating: 100.0),
+//        float4(repeating: 1000.0),
+//        float4(repeating: 10000.0)
+//    ],
+//    at: 3
+//)
+//
+//v.sort() { $0.x < $1.x }
+//v.removeSubrange(1..<4)
+//
+//if let i = v.firstIndex(of: float4(repeating: 9.0)) {
+//    v[i] = float4(repeating: 3.0)
+//}
+//
+//for coor in v {
+//    print(coor.x)
+//}
+//
+//print(v.isEmpty)
 
 //let nv = LLVector<float4>()
 //

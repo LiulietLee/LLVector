@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftShims
 
 public class LLVector<T> {
     typealias Pointer = UnsafeMutableRawPointer
@@ -14,25 +15,27 @@ public class LLVector<T> {
     private var pointer: Pointer!
     private var length: Int!
     private(set) var capacity: Int!
-    
-    private var stride: Int { return MemoryLayout<T>.stride }
+    private var stride: Int!
     
     public var data: UnsafeMutableRawPointer { return pointer }
     public var byteCount: Int { return stride * length }
 
-    public init() {
-        pointer = __allocate(stride)
-        capacity = 1
+    public init() { 
+        stride = MemoryLayout<T>.stride
+        capacity = 32
         length = 0
+        pointer = __allocate(stride * capacity)
     }
     
     public init(capacity: Int) {
+        stride = MemoryLayout<T>.stride
         pointer = __allocate(stride * capacity)
         length = 0
         self.capacity = capacity
     }
     
     public init(repeaing value: T, count length: Int) {
+        stride = MemoryLayout<T>.stride
         pointer = __allocate(byteCount)
         __fill_memory(pointer, length, value)
         self.length = length
@@ -40,13 +43,14 @@ public class LLVector<T> {
     }
     
     private init(_ pointer: Pointer, _ length: Int, _ capacity: Int) {
+        stride = MemoryLayout<T>.stride
         self.pointer = pointer
         self.length = length
         self.capacity = capacity
     }
     
     deinit {
-        __destory(pointer)
+        __deallocate(pointer)
     }
     
     public func copy() -> LLVector<T> {
@@ -85,7 +89,7 @@ extension LLVector {
             capacity <<= 1
             let newAddr = __allocate(stride * capacity)
             memcpy(newAddr, pointer, byteCount)
-            __destory(pointer)
+            __deallocate(pointer)
             pointer = newAddr
         }
         set(length, value)
@@ -100,7 +104,7 @@ extension LLVector {
             
             let newAddr = __allocate(stride * capacity)
             memcpy(newAddr, pointer, byteCount)
-            __destory(pointer)
+            __deallocate(pointer)
             pointer = newAddr
         }
         
@@ -117,7 +121,7 @@ extension LLVector {
             
             let newAddr = __allocate(stride * capacity)
             memcpy(newAddr, pointer, byteCount)
-            __destory(pointer)
+            __deallocate(pointer)
             pointer = newAddr
         }
         
@@ -142,12 +146,13 @@ extension LLVector {
             
             let dst = newAddr.advanced(by: stride * (index + 1))
             memcpy(dst, src, stride * (length - index))
-            __destory(pointer)
+            __deallocate(pointer)
             pointer = newAddr
         } else {
             let dst = pointer.advanced(by: stride * (index + 1))
             memcpy(dst, src, stride * (length - index))
         }
+        
         set(index, value)
         length += 1
     }
@@ -169,7 +174,7 @@ extension LLVector {
             
             let dst = newAddr.advanced(by: stride * (index + array.count))
             memcpy(dst, src, stride * (length - index))
-            __destory(pointer)
+            __deallocate(pointer)
             pointer = newAddr
         } else {
             let dst = pointer.advanced(by: stride * (index + array.count))
@@ -198,7 +203,7 @@ extension LLVector {
             
             let dst = newAddr.advanced(by: stride * (index + vector.count))
             memcpy(dst, src, stride * (length - index))
-            __destory(pointer)
+            __deallocate(pointer)
             pointer = newAddr
         } else {
             let dst = pointer.advanced(by: stride * (index + vector.count))
@@ -285,6 +290,10 @@ extension LLVector {
         }
     }
     
+    private func __deallocate(_ ptr: Pointer) {
+        free(ptr)
+    }
+    
     private func __fill_memory(_ ptr: Pointer, _ len: Int, _ val: T) {
         var idx = 1
         ptr.storeBytes(of: val, as: T.self)
@@ -297,10 +306,6 @@ extension LLVector {
             let dst = ptr.advanced(by: stride * idx)
             memcpy(dst, ptr, stride * (len - idx))
         }
-    }
-    
-    private func __destory(_ ptr: Pointer) {
-        free(ptr)
     }
     
     private func __ptrcpy(_ ptr: Pointer, _ size: Int) -> Pointer {
