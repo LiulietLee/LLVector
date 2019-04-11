@@ -18,7 +18,7 @@ public class LLVector<T> {
     
     public var byteCount: Int { return stride * length }
     public var memory: UnsafeMutableRawPointer { return pointer }
-    public var memoryLength: Int {
+    public var byteSize: Int {
         let alignment = Int(getpagesize())
         let size = stride * length
         return (size + alignment - 1) & (~(alignment - 1))
@@ -237,6 +237,7 @@ extension LLVector {
         length -= 1
     }
     
+    @discardableResult
     public func removeFirst() -> T? {
         if length == 0 { return nil }
         let first = get(0)
@@ -245,6 +246,7 @@ extension LLVector {
         return first
     }
     
+    @discardableResult
     public func removeLast() -> T? {
         if length == 0 { return nil }
         let last = get(length - 1)

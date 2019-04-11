@@ -6,8 +6,48 @@
 //  Copyright © 2019 Liuliet.Lee. All rights reserved.
 //
 
-import Foundation
 import simd
+import MetalKit
 
-let v = LLVector<Int>()
+let v = LLVector<float4>(capacity: 2333)
 
+v.append(float4(0.0, 0.5, 1.0, 1.0))
+v.append(contentsOf: [
+    float4(0.5, -0.5, 1.0, 1.0),
+    float4(-0.5, 0.5, 1.0, 1.0)
+])
+
+v.insert(float4(0.7, 0.3, 1.0, 1.0), at: 2)
+v.insert(
+    contentsOf: [
+        float4(0.2, 0.7, 1.0, 1.0),
+        float4(0.1, 0.6, 1.0, 1.0)
+    ],
+    at: 1
+)
+
+for coor in v { print("(\(coor.x), \(coor.y))") }
+
+v.removeFirst()
+v.removeSubrange(1..<3)
+
+v.sort() { $0.x < $1.x }
+
+for i in 0..<v.count {
+    v[i].y += 0.1
+    print(v[i])
+}
+
+let nv = v.copy()
+
+if let element = nv.first(where: { 0.2 < $0.x && $0.y < 0.7 }) {
+    print("first = \(element)")
+}
+
+let device = MTLCreateSystemDefaultDevice()!
+let buffer = device.makeBuffer(
+    bytesNoCopy: v.memory,
+    length: v.byteSize,
+    options: [],
+    deallocator: nil // Here you don't need to manually free the memory
+)
