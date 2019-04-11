@@ -6,8 +6,7 @@
 //  Copyright © 2019 Liuliet.Lee. All rights reserved.
 //
 
-import Foundation
-import SwiftShims
+import CoreFoundation
 
 public class LLVector<T> {
     typealias Pointer = UnsafeMutableRawPointer
@@ -17,8 +16,13 @@ public class LLVector<T> {
     private(set) var capacity: Int!
     private var stride: Int!
     
-    public var data: UnsafeMutableRawPointer { return pointer }
     public var byteCount: Int { return stride * length }
+    public var memory: UnsafeMutableRawPointer { return pointer }
+    public var memoryLength: Int {
+        let alignment = Int(getpagesize())
+        let size = stride * length
+        return (size + alignment - 1) & (~(alignment - 1))
+    }
 
     public init() { 
         stride = MemoryLayout<T>.stride
@@ -132,7 +136,7 @@ extension LLVector {
             pointer = newAddr
         }
         
-        memcpy(pointer.advanced(by: stride * length), vector.data, stride * vector.count)
+        memcpy(pointer.advanced(by: stride * length), vector.memory, stride * vector.count)
         length += vector.count
     }
     
@@ -217,7 +221,7 @@ extension LLVector {
             memcpy(dst, src, stride * (length - index))
         }
         
-        memcpy(pointer.advanced(by: stride * index), vector.data, stride * vector.count)
+        memcpy(pointer.advanced(by: stride * index), vector.memory, stride * vector.count)
         length += vector.count
     }
     
