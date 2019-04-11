@@ -9,7 +9,7 @@
 import Foundation
 import simd
 
-let v = LLVector<Int>()
+let v = LLVector<Int>(capacity: 100000007)
 var a = Array<Int>()
 
 func cal_vector() {
@@ -66,6 +66,11 @@ func cal_array() {
 }
 
 cal_vector()
+
+//import MetalKit
+//
+//let device = MTLCreateSystemDefaultDevice()!
+//let buffer = device.makeBuffer(bytesNoCopy: <#T##UnsafeMutableRawPointer#>, length: <#T##Int#>, options: <#T##MTLResourceOptions#>, deallocator: <#T##((UnsafeMutableRawPointer, Int) -> Void)?##((UnsafeMutableRawPointer, Int) -> Void)?##(UnsafeMutableRawPointer, Int) -> Void#>)
 
 //for i in 0..<10 {
 //    v.append(float4(repeating: Float(i)))

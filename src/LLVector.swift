@@ -22,7 +22,7 @@ public class LLVector<T> {
 
     public init() { 
         stride = MemoryLayout<T>.stride
-        capacity = 32
+        capacity = 8
         length = 0
         pointer = __allocate(stride * capacity)
     }
@@ -36,10 +36,10 @@ public class LLVector<T> {
     
     public init(repeaing value: T, count length: Int) {
         stride = MemoryLayout<T>.stride
-        pointer = __allocate(byteCount)
-        __fill_memory(pointer, length, value)
         self.length = length
         capacity = length
+        pointer = __allocate(byteCount)
+        __fill_memory(pointer, length, value)
     }
     
     private init(_ pointer: Pointer, _ length: Int, _ capacity: Int) {
@@ -51,6 +51,12 @@ public class LLVector<T> {
     
     deinit {
         __deallocate(pointer)
+    }
+    
+    public func deallocate() {
+        __deallocate(pointer)
+        length = 0
+        capacity = 0
     }
     
     public func copy() -> LLVector<T> {
@@ -92,6 +98,7 @@ extension LLVector {
             __deallocate(pointer)
             pointer = newAddr
         }
+        
         set(length, value)
         length += 1
     }
