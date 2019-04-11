@@ -1,7 +1,7 @@
 # LLVector
 > Page-aligned array for MetalKit
 
-It’s a very uncomfortable thing to manipulate pointers directly in Swift, so I wrote this class. You can use it like a normal Swift array and create MTLBuffer by `makeBuffer(bytesNoCopy: _, ...)` with it.
+It’s a very inconvenient thing to manipulate pointers directly in Swift, so I wrote this class. You can use it as a normal Swift array and create MTLBuffer by `makeBuffer(bytesNoCopy: _, ...)` with it.
 
 ## Installation
 Move [src\LLVector.swift](https://github.com/LiulietLee/LLVector/blob/master/src/LLVector.swift) to your project.
@@ -14,6 +14,16 @@ let v = LLVector<float4>()
 let v = LLVector<float4>(capacity: 2333)
 // Or
 let v = LLVector(repeaing: float4(repeating: 1.0), count: 100)
+```
+### Access elements
+```swift
+let n = v[0]
+v[0] = float4(0.5, 0.5, 1.0, 1.0)
+
+// If you need to access elements outside the valid range (0..<length of the vector)
+// for some weird reason, use get and set methods.
+let n = v.get(-1)
+v.set(v.count + 3, float4(...))
 ```
 ### Appending
 ```swift
