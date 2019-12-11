@@ -9,31 +9,31 @@ Move [src\LLVector.swift](https://github.com/LiulietLee/LLVector/blob/master/src
 ## Usage
 ### Initialization
 ```swift
-let v = LLVector<float4>()
+let v = LLVector<SIMD4<Float> >()
 // Or
-let v = LLVector<float4>(capacity: 2333)
+let v = LLVector<SIMD4<Float> >(capacity: 2333)
 // Or
-let v = LLVector(repeaing: float4(repeating: 1.0), count: 100)
+let v = LLVector(repeaing: SIMD4<Float>(repeating: 1.0), count: 100)
 ```
 ### Access elements
 ```swift
 let n = v[0]
-v[0] = float4(0.5, 0.5, 1.0, 1.0)
+v[0] = SIMD4<Float>(0.5, 0.5, 1.0, 1.0)
 
 // If you need to access elements outside the valid range (0..<length of the vector)
 // for some weird reason, use get and set methods.
 let n = v.get(-1)
-v.set(v.count + 3, float4(...))
+v.set(v.count + 3, SIMD4<Float>(...))
 ```
 ### Appending
 ```swift
 // Add a new element to the end of the vector
-v.append(float4(0.0, 0.5, 1.0, 1.0))
+v.append(SIMD4<Float>(0.0, 0.5, 1.0, 1.0))
 
 // Or add the entire array to the end of the vector
 v.append(contentsOf: [
-    float4(0.5, -0.5, 1.0, 1.0),
-    float4(-0.5, 0.5, 1.0, 1.0)
+    SIMD4<Float>(0.5, -0.5, 1.0, 1.0),
+    SIMD4<Float>(-0.5, 0.5, 1.0, 1.0)
 ])
 
 // Or add anthor vector to the end of the vector
@@ -42,11 +42,11 @@ v.append(contentsOf: another_vector)
 ### Inserting
 ```swift
 // Insert methods are similar to append methods
-v.insert(float4(0.7, 0.3, 1.0, 1.0), at: 1)
+v.insert(SIMD4<Float>(0.7, 0.3, 1.0, 1.0), at: 1)
 v.insert(
     contentsOf: [
-        float4(0.2, 0.7, 1.0, 1.0),
-        float4(0.1, 0.6, 1.0, 1.0)
+        SIMD4<Float>(0.2, 0.7, 1.0, 1.0),
+        SIMD4<Float>(0.1, 0.6, 1.0, 1.0)
     ],
     at: 2
 )

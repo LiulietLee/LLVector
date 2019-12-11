@@ -9,19 +9,19 @@
 import simd
 import MetalKit
 
-let v = LLVector<float4>(capacity: 2333)
+let v = LLVector<SIMD4<Float> >(capacity: 2333)
 
-v.append(float4(0.0, 0.5, 1.0, 1.0))
+v.append(SIMD4<Float>(0.0, 0.5, 1.0, 1.0))
 v.append(contentsOf: [
-    float4(0.5, -0.5, 1.0, 1.0),
-    float4(-0.5, 0.5, 1.0, 1.0)
+    SIMD4<Float>(0.5, -0.5, 1.0, 1.0),
+    SIMD4<Float>(-0.5, 0.5, 1.0, 1.0)
 ])
 
-v.insert(float4(0.7, 0.3, 1.0, 1.0), at: 2)
+v.insert(SIMD4<Float>(0.7, 0.3, 1.0, 1.0), at: 2)
 v.insert(
     contentsOf: [
-        float4(0.2, 0.7, 1.0, 1.0),
-        float4(0.1, 0.6, 1.0, 1.0)
+        SIMD4<Float>(0.2, 0.7, 1.0, 1.0),
+        SIMD4<Float>(0.1, 0.6, 1.0, 1.0)
     ],
     at: 1
 )
@@ -49,5 +49,5 @@ let buffer = device.makeBuffer(
     bytesNoCopy: v.memory,
     length: v.byteSize,
     options: [],
-    deallocator: nil // Here you don't need to manually free the memory
+    deallocator: nil
 )

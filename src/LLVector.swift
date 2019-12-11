@@ -91,20 +91,20 @@ public class LLVector<T> {
 extension LLVector {
     public subscript(index: Int) -> T {
         get {
-            assert(0 <= index && index < length, "out of range")
+            precondition(0 <= index && index < length, "out of range")
             return get(index)
         }
         set(newValue) {
-            assert(0 <= index && index < length, "out of range")
+            precondition(0 <= index && index < length, "out of range")
             set(index, newValue)
         }
     }
     
-    public func get(_ index: Int) -> T {
+    @inline(__always) public func get(_ index: Int) -> T {
         return pointer.load(fromByteOffset: stride * index, as: T.self)
     }
     
-    public func set(_ index: Int, _ value: T) {
+    @inline(__always) public func set(_ index: Int, _ value: T) {
         pointer.storeBytes(of: value, toByteOffset: stride * index, as: T.self)
     }
 
@@ -159,7 +159,7 @@ extension LLVector {
     // MARK: - insert functions
     
     public func insert(_ value: T, at index: Int) {
-        assert(0 <= index && index <= length, "out of range")
+        precondition(0 <= index && index <= length, "out of range")
         if index == length {
             append(value)
             return
@@ -185,7 +185,7 @@ extension LLVector {
     }
     
     public func insert(contentsOf array: [T], at index: Int) {
-        assert(0 <= index && index <= length, "out of range")
+        precondition(0 <= index && index <= length, "out of range")
         if index == length {
             append(contentsOf: array)
         }
@@ -214,7 +214,7 @@ extension LLVector {
     }
     
     public func insert(contentsOf vector: LLVector, at index: Int) {
-        assert(0 <= index && index <= length, "out of range")
+        precondition(0 <= index && index <= length, "out of range")
         if index == length {
             append(contentsOf: vector)
         }
@@ -244,7 +244,7 @@ extension LLVector {
     // MARK: - remove functions
     
     public func remove(at index: Int) {
-        assert(0 <= index && index < length, "out of range")
+        precondition(0 <= index && index < length, "out of range")
         if index < length - 1 {
             let dst = pointer.advanced(by: stride * index)
             let src = pointer.advanced(by: stride * (index + 1))
@@ -271,7 +271,7 @@ extension LLVector {
     }
     
     public func removeSubrange(_ range: Range<Int>) {
-        assert(
+        precondition(
             0 <= range.startIndex && range.startIndex < length
                 && 0 < range.endIndex && range.endIndex <= length,
             "out of range"
