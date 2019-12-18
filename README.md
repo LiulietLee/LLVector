@@ -88,7 +88,7 @@ if let element = v.first(where: { 0.2 < $0.x && $0.y < 0.7 }) {
 ### Create MTLBuffer
 ```swift
 let buffer = device.makeBuffer(
-    bytesNoCopy: v.memory,
+    bytesNoCopy: v.pointer,
     length: v.byteSize,
     options: [],
     deallocator: nil // Here you don't need to manually free the memory

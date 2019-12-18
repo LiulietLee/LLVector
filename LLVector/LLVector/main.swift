@@ -46,7 +46,7 @@ if let element = nv.first(where: { 0.2 < $0.x && $0.y < 0.7 }) {
 
 let device = MTLCreateSystemDefaultDevice()!
 let buffer = device.makeBuffer(
-    bytesNoCopy: v.memory,
+    bytesNoCopy: v.pointer,
     length: v.byteSize,
     options: [],
     deallocator: nil

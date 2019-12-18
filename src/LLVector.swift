@@ -25,22 +25,21 @@
 import CoreFoundation
 
 public class LLVector<T> {
-    typealias Pointer = UnsafeMutableRawPointer
+    public typealias Pointer = UnsafeMutableRawPointer
     
-    private var pointer: Pointer!
+    public var pointer: Pointer!
     private var length: Int!
     private(set) var capacity: Int!
     private var stride: Int!
     
     public var byteCount: Int { return stride * length }
-    public var memory: UnsafeMutableRawPointer { return pointer }
     public var byteSize: Int {
         let alignment = Int(getpagesize())
         let size = stride * length
         return (size + alignment - 1) & (~(alignment - 1))
     }
 
-    public init() { 
+    public init() {
         stride = MemoryLayout<T>.stride
         capacity = 8
         length = 0
@@ -62,7 +61,7 @@ public class LLVector<T> {
         __fill_memory(pointer, length, value)
     }
     
-    private init(_ pointer: Pointer, _ length: Int, _ capacity: Int) {
+    init(_ pointer: Pointer, _ length: Int, _ capacity: Int) {
         stride = MemoryLayout<T>.stride
         self.pointer = pointer
         self.length = length
@@ -152,7 +151,7 @@ extension LLVector {
             pointer = newAddr
         }
         
-        memcpy(pointer.advanced(by: stride * length), vector.memory, stride * vector.count)
+        memcpy(pointer.advanced(by: stride * length), vector.pointer, stride * vector.count)
         length += vector.count
     }
     
@@ -237,7 +236,7 @@ extension LLVector {
             memcpy(dst, src, stride * (length - index))
         }
         
-        memcpy(pointer.advanced(by: stride * index), vector.memory, stride * vector.count)
+        memcpy(pointer.advanced(by: stride * index), vector.pointer, stride * vector.count)
         length += vector.count
     }
     
@@ -320,7 +319,7 @@ extension LLVector {
     }
     
     private func __deallocate(_ ptr: Pointer) {
-        free(ptr)
+        ptr.deallocate()
     }
     
     private func __fill_memory(_ ptr: Pointer, _ len: Int, _ val: T) {
